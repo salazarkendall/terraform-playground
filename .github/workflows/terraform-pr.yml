@@ -1,0 +1,47 @@
+name: Terraform Plan (PR)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_READ_APP_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_READ_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUB_ID }}
+  ARM_USE_OIDC: true
+
+jobs:
+  terraform:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC - Read/Reader)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_READ_APP_ID }}
+          tenant-id: ${{ secrets.AZURE_READ_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUB_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan
